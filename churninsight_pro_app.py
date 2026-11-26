@@ -268,9 +268,18 @@ def load_data():
     df = df.drop_duplicates().reset_index(drop=True)
     if "Churn" not in df:
         raise ValueError("The dataset must contain the target column 'Churn'.")
-    churn = df["Churn"].astype(str).str.strip().str.lower()
-    df["Churn"] = np.where(churn.isin(["yes", "1", "true"]), "Yes",
-                    np.where(churn.isin(["no", "0", "false"]), "No", np.nan))
+    # Use pandas mapping rather than np.where with strings and np.nan.
+    # NumPy 2.x raises DTypePromotionError when those different dtypes are mixed.
+    churn = df["Churn"].astype("string").str.strip().str.lower()
+    churn_map = {
+        "yes": "Yes",
+        "1": "Yes",
+        "true": "Yes",
+        "no": "No",
+        "0": "No",
+        "false": "No",
+    }
+    df["Churn"] = churn.map(churn_map)
     df = df.dropna(subset=["Churn"]).reset_index(drop=True)
     df["_ChurnFlag"] = (df["Churn"] == "Yes").astype(int)
     return df
