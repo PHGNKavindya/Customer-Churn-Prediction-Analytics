@@ -657,11 +657,22 @@ elif page == "Athena Insights":
     else:
         section(chosen, "Exported Amazon Athena query result · CSV snapshot")
         if "churn_rate_percent" in result.columns:
-            metric_row = st.columns(min(3, len(result)))
-            if len(result) == 1 and "churn_rate_percent" in result:
-                metric_row[0].metric("Overall churn rate", f"{float(result.iloc[0]['churn_rate_percent']):.2f}%")
-                metric_row[1].metric("Customers", f"{int(result.iloc[0]['total_customers']):,}")
-                metric_row[2].metric("Churned customers", f"{int(result.iloc[0]['churned_customers']):,}")
+            # The overall summary is a one-row table, but it contains three
+            # separate metrics. Always create three UI columns for that case.
+            if len(result) == 1 and {"total_customers", "churned_customers", "churn_rate_percent"}.issubset(result.columns):
+                metric_row = st.columns(3)
+                metric_row[0].metric(
+                    "Overall churn rate",
+                    f"{float(result.iloc[0]['churn_rate_percent']):.2f}%"
+                )
+                metric_row[1].metric(
+                    "Customers",
+                    f"{int(result.iloc[0]['total_customers']):,}"
+                )
+                metric_row[2].metric(
+                    "Churned customers",
+                    f"{int(result.iloc[0]['churned_customers']):,}"
+                )
         if "churn_rate_percent" in result.columns and len(result) > 1:
             cat_col = result.columns[0]
             fig = go.Figure(go.Bar(
